@@ -36,7 +36,7 @@ func QueryNotionVulnerabilityName(client *notionapi.Client, vulnerability Output
 				},
 				{
 					Property: "Host",
-					Text: &notionapi.TextFilterCondition{
+					Select: &notionapi.SelectFilterCondition{
 						Equals: vulnerability.Host,
 					},
 				},
@@ -107,13 +107,9 @@ func InsertNotionVulnerability(client *notionapi.Client, vulnerability Output) (
 					Name: vulnerability.Info.Severity,
 				},
 			},
-			"Host": notionapi.RichTextProperty{
-				RichText: []notionapi.RichText{
-					{
-						Text: notionapi.Text{
-							Content: vulnerability.Host,
-						},
-					},
+			"Host": notionapi.SelectProperty{
+				Select: notionapi.Option{
+					Name: vulnerability.Host,
 				},
 			},
 			"Endpoint": notionapi.RichTextProperty{
