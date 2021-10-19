@@ -3,6 +3,7 @@ package model
 import (
 	"context"
 	"errors"
+	"fmt"
 	"github.com/fadhilthomas/go-nuclei-reporter/config"
 	"github.com/jomei/notionapi"
 	"github.com/rs/zerolog/log"
@@ -14,8 +15,16 @@ func OpenNotionDB() (client *notionapi.Client) {
 	return client
 }
 
-func QueryNotionVulnerabilityNameHost(client *notionapi.Client, vulnerabilityName string, vulnerabilityHost string) (output []notionapi.Page, err error) {
+func QueryNotionVulnerabilityName(client *notionapi.Client, vulnerability Output) (output []notionapi.Page, err error) {
 	databaseId := config.GetStr(config.NOTION_DATABASE)
+
+	var vulnerabilityName string
+	if vulnerability.Matched != "" {
+		vulnerabilityName = fmt.Sprintf("%s - %s", vulnerability.Info.Name, vulnerability.MatcherName)
+	} else {
+		vulnerabilityName = vulnerability.Info.Name
+	}
+
 	databaseQueryRequest := &notionapi.DatabaseQueryRequest{
 		CompoundFilter: &notionapi.CompoundFilter{
 			notionapi.FilterOperatorAND: []notionapi.PropertyFilter{
@@ -28,7 +37,7 @@ func QueryNotionVulnerabilityNameHost(client *notionapi.Client, vulnerabilityNam
 				{
 					Property: "Host",
 					Text: &notionapi.TextFilterCondition{
-						Equals: vulnerabilityHost,
+						Equals: vulnerability.Host,
 					},
 				},
 			},
@@ -64,6 +73,13 @@ func QueryNotionVulnerabilityStatus(client *notionapi.Client, vulnerabilityStatu
 func InsertNotionVulnerability(client *notionapi.Client, vulnerability Output) (output *notionapi.Page, err error) {
 	databaseId := config.GetStr(config.NOTION_DATABASE)
 
+	var vulnerabilityName string
+	if vulnerability.Matched != "" {
+		vulnerabilityName = fmt.Sprintf("%s - %s", vulnerability.Info.Name, vulnerability.MatcherName)
+	} else {
+		vulnerabilityName = vulnerability.Info.Name
+	}
+
 	var multiSelect []notionapi.Option
 	for _, tag := range vulnerability.Info.Tags {
 		selectOption := notionapi.Option{
@@ -81,7 +97,7 @@ func InsertNotionVulnerability(client *notionapi.Client, vulnerability Output) (
 				Title: []notionapi.RichText{
 					{
 						Text: notionapi.Text{
-							Content: vulnerability.TemplateID,
+							Content: vulnerabilityName,
 						},
 					},
 				},
