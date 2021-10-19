@@ -103,6 +103,8 @@ func main() {
 					log.Error().Str("file", "main").Err(err)
 				}
 				slackVulnerabilityStatus = "new"
+				summaryReportStatus.New++
+
 			} else {
 				notionPageList = append(notionPageList, notionQueryNameResult[0])
 				slackVulnerabilityStatus = "still-open"
