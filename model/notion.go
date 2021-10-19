@@ -19,7 +19,7 @@ func QueryNotionVulnerabilityName(client *notionapi.Client, vulnerability Output
 	databaseId := config.GetStr(config.NOTION_DATABASE)
 
 	var vulnerabilityName string
-	if vulnerability.Matched != "" {
+	if vulnerability.MatcherName != "" {
 		vulnerabilityName = fmt.Sprintf("%s - %s", vulnerability.Info.Name, vulnerability.MatcherName)
 	} else {
 		vulnerabilityName = vulnerability.Info.Name
@@ -74,7 +74,7 @@ func InsertNotionVulnerability(client *notionapi.Client, vulnerability Output) (
 	databaseId := config.GetStr(config.NOTION_DATABASE)
 
 	var vulnerabilityName string
-	if vulnerability.Matched != "" {
+	if vulnerability.MatcherName != "" {
 		vulnerabilityName = fmt.Sprintf("%s - %s", vulnerability.Info.Name, vulnerability.MatcherName)
 	} else {
 		vulnerabilityName = vulnerability.Info.Name
