@@ -18,7 +18,7 @@ func QueryNotionVulnerabilityNameHost(client *notionapi.Client, vulnerabilityNam
 	databaseId := config.GetStr(config.NOTION_DATABASE)
 	databaseQueryRequest := &notionapi.DatabaseQueryRequest{
 		CompoundFilter: &notionapi.CompoundFilter{
-			notionapi.FilterOperatorOR: []notionapi.PropertyFilter{
+			notionapi.FilterOperatorAND: []notionapi.PropertyFilter{
 				{
 					Property: "Name",
 					Text: &notionapi.TextFilterCondition{
