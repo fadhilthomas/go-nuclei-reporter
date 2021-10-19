@@ -14,16 +14,27 @@ func OpenNotionDB() (client *notionapi.Client) {
 	return client
 }
 
-func QueryNotionVulnerabilityName(client *notionapi.Client, vulnerabilityName string) (output []notionapi.Page, err error) {
+func QueryNotionVulnerabilityNameHost(client *notionapi.Client, vulnerabilityName string, vulnerabilityHost string) (output []notionapi.Page, err error) {
 	databaseId := config.GetStr(config.NOTION_DATABASE)
 	databaseQueryRequest := &notionapi.DatabaseQueryRequest{
-		PropertyFilter: &notionapi.PropertyFilter{
-			Property: "Name",
-			Text: &notionapi.TextFilterCondition{
-				Equals: vulnerabilityName,
+		CompoundFilter: &notionapi.CompoundFilter{
+			notionapi.FilterOperatorOR: []notionapi.PropertyFilter{
+				{
+					Property: "Name",
+					Text: &notionapi.TextFilterCondition{
+						Equals: vulnerabilityName,
+					},
+				},
+				{
+					Property: "Host",
+					Text: &notionapi.TextFilterCondition{
+						Equals: vulnerabilityHost,
+					},
+				},
 			},
 		},
 	}
+
 	res, err := client.Database.Query(context.Background(), notionapi.DatabaseID(databaseId), databaseQueryRequest)
 	if err != nil {
 		log.Error().Str("file", "notion").Msg(err.Error())

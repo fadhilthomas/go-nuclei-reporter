@@ -92,7 +92,7 @@ func main() {
 			}
 			slackVulnerabilityStatus = sqlQueryNameResult
 		} else if databaseType == "notion" {
-			notionQueryNameResult, err := model.QueryNotionVulnerabilityName(notionDatabase, detailReport.TemplateID)
+			notionQueryNameResult, err := model.QueryNotionVulnerabilityNameHost(notionDatabase, detailReport.TemplateID, detailReport.Host)
 			if err != nil {
 				log.Error().Str("file", "main").Err(err)
 			}
