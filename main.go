@@ -34,17 +34,20 @@ func main() {
 		err := model.UpdateSqliteVulnerabilityStatusAll(sqlDatabase)
 		if err != nil {
 			log.Error().Str("file", "main").Err(err)
+			return
 		}
 	} else if databaseType == "notion" {
 		notionDatabase = model.OpenNotionDB()
 		notionQueryStatusResult, err := model.QueryNotionVulnerabilityStatus(notionDatabase, "open")
 		if err != nil {
 			log.Error().Str("file", "main").Err(err)
+			return
 		}
 		for _, notionPage := range notionQueryStatusResult {
 			_, err := model.UpdateNotionVulnerabilityStatus(notionDatabase, notionPage.ID.String(), "close")
 			if err != nil {
 				log.Error().Str("file", "main").Err(err)
+				return
 			}
 		}
 	}
@@ -55,6 +58,7 @@ func main() {
 	fileReport, err := os.Open(config.GetStr(config.FILE_LOCATION))
 	if err != nil {
 		log.Error().Str("file", "main").Err(err)
+		return
 	}
 	fScanner := bufio.NewScanner(fileReport)
 	for fScanner.Scan() {
@@ -62,6 +66,7 @@ func main() {
 		err = json.Unmarshal([]byte(fScanner.Text()), &detailReport)
 		if err != nil {
 			log.Error().Str("file", "slack").Err(err)
+			return
 		}
 
 		vulnerabilityList = append(vulnerabilityList, detailReport)
@@ -88,6 +93,7 @@ func main() {
 				err = model.InsertSqliteVulnerability(sqlDatabase, detailReport.TemplateID, detailReport.Host, "open")
 				if err != nil {
 					log.Error().Str("file", "main").Err(err)
+					return
 				}
 			}
 			slackVulnerabilityStatus = sqlQueryNameResult
@@ -95,12 +101,14 @@ func main() {
 			notionQueryNameResult, err := model.QueryNotionVulnerabilityName(notionDatabase, detailReport)
 			if err != nil {
 				log.Error().Str("file", "main").Err(err)
+				return
 			}
 
 			if len(notionQueryNameResult) == 0 {
 				_, err = model.InsertNotionVulnerability(notionDatabase, detailReport)
 				if err != nil {
 					log.Error().Str("file", "main").Err(err)
+					return
 				}
 				slackVulnerabilityStatus = "new"
 				summaryReportStatus.New++
@@ -122,6 +130,7 @@ func main() {
 			err = model.UpdateSqliteVulnerabilityStatus(sqlDatabase, vulnerability.TemplateID, vulnerability.Host, "open")
 			if err != nil {
 				log.Error().Str("file", "main").Err(err)
+				return
 			}
 		}
 	} else if databaseType == "notion" {
@@ -129,6 +138,7 @@ func main() {
 			_, err = model.UpdateNotionVulnerabilityStatus(notionDatabase, notionPage.ID.String(), "open")
 			if err != nil {
 				log.Error().Str("file", "main").Err(err)
+				return
 			}
 		}
 
@@ -136,6 +146,7 @@ func main() {
 		notionQueryStatusResult, err := model.QueryNotionVulnerabilityStatus(notionDatabase, "close")
 		if err != nil {
 			log.Error().Str("file", "main").Err(err)
+			return
 		}
 		summaryReportStatus.Close = len(notionQueryStatusResult)
 	}
@@ -144,5 +155,6 @@ func main() {
 	err = model.SendSlackNotification(slackToken, slackAttachmentList, slackBlockList)
 	if err != nil {
 		log.Error().Str("file", "main").Err(err)
+		return
 	}
 }
