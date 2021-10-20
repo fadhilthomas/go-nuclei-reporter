@@ -104,15 +104,17 @@ func main() {
 				}
 				slackVulnerabilityStatus = "new"
 				summaryReportStatus.New++
-
 			} else {
 				notionPageList = append(notionPageList, notionQueryNameResult[0])
 				slackVulnerabilityStatus = "still-open"
 			}
 		}
-
 		summaryReportSeverity.Host = detailReport.Host
 		// slackAttachmentList = append(slackAttachmentList, model.CreateAttachment(detailReport.Info.Name, strings.Join(detailReport.Info.Tags, ", "), detailReport.Info.Severity, detailReport.Info.Classification.CvssMetrics, strconv.FormatFloat(detailReport.Info.Classification.CvssScore, 'f', -1, 64), detailReport.Host, detailReport.Matched, slackVulnerabilityStatus))
+	}
+
+	if len(vulnerabilityList) == 0 {
+		return
 	}
 
 	if databaseType == "sqlite" {
