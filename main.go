@@ -11,6 +11,7 @@ import (
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 	"github.com/rs/zerolog/pkgerrors"
+	"go.uber.org/ratelimit"
 	"os"
 )
 
@@ -32,6 +33,7 @@ func main() {
 		zerolog.SetGlobalLevel(zerolog.InfoLevel)
 	}
 	zerolog.ErrorStackMarshaler = pkgerrors.MarshalStack
+	rl := ratelimit.New(1)
 
 	databaseType := config.GetStr(config.DATABASE_TYPE)
 	slackToken := config.GetStr(config.SLACK_TOKEN)
@@ -52,12 +54,15 @@ func main() {
 		}
 	} else if databaseType == "notion" {
 		notionDatabase = model.OpenNotionDB()
+
+		rl.Take()
 		notionQueryStatusResult, err := model.QueryNotionVulnerabilityStatus(notionDatabase, "open")
 		if err != nil {
 			log.Error().Stack().Err(errors.New(err.Error())).Msg("")
 			return
 		}
 		for _, notionPage := range notionQueryStatusResult {
+			rl.Take()
 			_, err := model.UpdateNotionVulnerabilityStatus(notionDatabase, notionPage.ID.String(), "close")
 			if err != nil {
 				log.Error().Stack().Err(errors.New(err.Error())).Msg("")
@@ -112,6 +117,7 @@ func main() {
 			}
 			slackVulnerabilityStatus = sqlQueryNameResult
 		} else if databaseType == "notion" {
+			rl.Take()
 			notionQueryNameResult, err := model.QueryNotionVulnerabilityName(notionDatabase, detailReport)
 			if err != nil {
 				log.Error().Stack().Err(errors.New(err.Error())).Msg("")
@@ -119,6 +125,7 @@ func main() {
 			}
 
 			if len(notionQueryNameResult) == 0 {
+				rl.Take()
 				_, err = model.InsertNotionVulnerability(notionDatabase, detailReport)
 				if err != nil {
 					log.Error().Stack().Err(errors.New(err.Error())).Msg("")
@@ -149,6 +156,7 @@ func main() {
 		}
 	} else if databaseType == "notion" {
 		for _, notionPage := range notionPageList {
+			rl.Take()
 			_, err = model.UpdateNotionVulnerabilityStatus(notionDatabase, notionPage.ID.String(), "open")
 			if err != nil {
 				log.Error().Stack().Err(errors.New(err.Error())).Msg("")
@@ -157,6 +165,7 @@ func main() {
 		}
 
 		summaryReportStatus.Open = len(vulnerabilityList)
+		rl.Take()
 		notionQueryStatusResult, err := model.QueryNotionVulnerabilityStatus(notionDatabase, "close")
 		if err != nil {
 			log.Error().Stack().Err(errors.New(err.Error())).Msg("")
