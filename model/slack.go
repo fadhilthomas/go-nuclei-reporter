@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/rs/zerolog/log"
 	"net/http"
 	"time"
 )
@@ -116,7 +115,6 @@ func SendSlackNotification(webHookURL string, attachmentList []SlackAttachmentBo
 	if err != nil {
 		return err
 	}
-	log.Debug().Str("file", "main").Msg(buf.String())
 	if buf.String() != "ok" {
 		return errors.New("non-ok response returned from slack")
 	}

@@ -1,10 +1,15 @@
 package main
 
-import "github.com/fadhilthomas/go-nuclei-reporter/model"
+import (
+	"github.com/fadhilthomas/go-nuclei-reporter/model"
+	"github.com/pkg/errors"
+	"github.com/rs/zerolog/log"
+)
 
 func main() {
-	database := model.InitSqliteDB()
-	if database == nil {
-		return
+	_, err := model.InitSqliteDB()
+	if err != nil {
+		log.Error().Stack().Err(errors.New(err.Error())).Msg("")
 	}
+	return
 }

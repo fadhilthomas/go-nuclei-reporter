@@ -1,8 +1,11 @@
 package config
 
 var base = mergeConfig(
-	logLevelConfig,
-	slackConfig,
-	fileLocationConfig,
 	databaseLocationConfig,
+	databaseTypeConfig,
+	fileLocationConfig,
+	logLevelConfig,
+	notionDatabaseConfig,
+	notionTokenConfig,
+	slackConfig,
 )
