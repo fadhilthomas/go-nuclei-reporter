@@ -77,6 +77,8 @@ func InsertNotionVulnerability(client *notionapi.Client, vulnerability Output) (
 		vulnerabilityName = vulnerability.Info.Name
 	}
 
+	vulnerabilityName = truncateString(vulnerabilityName, 50)
+
 	var multiSelect []notionapi.Option
 	for _, tag := range vulnerability.Info.Tags {
 		selectOption := notionapi.Option{
@@ -157,4 +159,15 @@ func UpdateNotionVulnerabilityStatus(client *notionapi.Client, pageId string, st
 		return nil, errors.New(err.Error())
 	}
 	return res, nil
+}
+
+func truncateString(str string, num int) string {
+	bnoden := str
+	if len(str) > num {
+		if num > 3 {
+			num -= 3
+		}
+		bnoden = str[0:num] + "..."
+	}
+	return bnoden
 }

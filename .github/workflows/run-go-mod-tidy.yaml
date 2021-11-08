@@ -1,27 +1,28 @@
-name: gosum
+---
+name: run-go-mod-tidy
 
 on:
   push:
     branches:
-      - "main"
+      - main
     paths:
-      - ".github/workflows/gosum.yaml"
-      - "go.mod"
-      - "go.sum"
+      - .github/workflows/gosum.yaml
+      - go.mod
+      - go.sum
 
 jobs:
-  gosum:
+  run-go-mod-tidy:
     runs-on: ubuntu-latest
     steps:
-      - name: check out code
+      - name: checkout code
         uses: actions/checkout@v2
 
-      - name: set up go
+      - name: setup go
         uses: actions/setup-go@v2
         with:
           go-version: 1.16
 
-      - name: tidy
+      - name: run go mod tidy
         run: |
           rm -f go.sum
           go mod tidy
@@ -30,10 +31,10 @@ jobs:
         uses: peter-evans/create-pull-request@v3.11.0
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
-          commit-message: "tidy up the go modules"
-          title: "tidy up the go module"
+          commit-message: tidy up the go modules
+          title: tidy up the go module
           body: |
             current `go.mod` and `go.sum` don't match the source code.
           branch: go-mod-tidy
           branch-suffix: short-commit-hash
-          labels: "bug"
+          labels: bug

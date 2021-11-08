@@ -1,4 +1,5 @@
-name: pr
+---
+name: run-go-test
 
 on:
   push:
@@ -13,24 +14,23 @@ on:
   pull_request:
 
 jobs:
-  checks:
-    name: pull request checks
+  run-go-test:
     runs-on: ubuntu-latest
     steps:
-      - name: set up go
+      - name: setup go
         uses: actions/setup-go@v2
         with:
           go-version: 1.16
 
-      - name: check out code
+      - name: checkout code
         uses: actions/checkout@v2
 
-      - name: golangci-lint
+      - name: run golangci-lint
         uses: golangci/golangci-lint-action@v2.5.2
         with:
           version: v1.29
 
-      - name: run tests
+      - name: run-go-test
         run: go test .
 
       - name: compile the project
