@@ -11,5 +11,4 @@ func main() {
 	if err != nil {
 		log.Error().Stack().Err(errors.New(err.Error())).Msg("")
 	}
-	return
 }
