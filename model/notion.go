@@ -24,6 +24,8 @@ func QueryNotionVulnerabilityName(client *notionapi.Client, vulnerability Output
 		vulnerabilityName = vulnerability.Info.Name
 	}
 
+	vulnerabilityName = truncateString(vulnerabilityName, 100)
+
 	databaseQueryRequest := &notionapi.DatabaseQueryRequest{
 		CompoundFilter: &notionapi.CompoundFilter{
 			notionapi.FilterOperatorAND: []notionapi.PropertyFilter{
@@ -77,7 +79,7 @@ func InsertNotionVulnerability(client *notionapi.Client, vulnerability Output) (
 		vulnerabilityName = vulnerability.Info.Name
 	}
 
-	vulnerabilityName = truncateString(vulnerabilityName, 50)
+	vulnerabilityName = truncateString(vulnerabilityName, 100)
 
 	var multiSelect []notionapi.Option
 	for _, tag := range vulnerability.Info.Tags {
@@ -126,8 +128,6 @@ func InsertNotionVulnerability(client *notionapi.Client, vulnerability Output) (
 				},
 			},
 			"Tags": notionapi.MultiSelectProperty{
-				ID:          "",
-				Type:        "",
 				MultiSelect: multiSelect,
 			},
 			"CVSS Score": notionapi.NumberProperty{

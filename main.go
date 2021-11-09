@@ -16,13 +16,12 @@ import (
 )
 
 var (
-	slackAttachmentList      []model.SlackAttachmentBody
-	slackBlockList           []model.SlackBlockBody
-	vulnerabilityList        []model.Output
-	notionPageList           []notionapi.Page
-	sqlDatabase              *sql.DB
-	slackVulnerabilityStatus string
-	notionDatabase           *notionapi.Client
+	slackAttachmentList []model.SlackAttachmentBody
+	slackBlockList      []model.SlackBlockBody
+	vulnerabilityList   []model.Output
+	notionPageList      []notionapi.Page
+	sqlDatabase         *sql.DB
+	notionDatabase      *notionapi.Client
 )
 
 func main() {
@@ -103,8 +102,6 @@ func main() {
 			summaryReportSeverity.Info++
 		}
 
-		slackVulnerabilityStatus = ""
-
 		if databaseType == "sqlite" {
 			sqlQueryNameResult, _ := model.QuerySqliteVulnerability(sqlDatabase, detailReport.TemplateID, detailReport.Host)
 			if sqlQueryNameResult == "new" {
@@ -115,7 +112,6 @@ func main() {
 					return
 				}
 			}
-			slackVulnerabilityStatus = sqlQueryNameResult
 		} else if databaseType == "notion" {
 			rl.Take()
 			notionQueryNameResult, err := model.QueryNotionVulnerabilityName(notionDatabase, detailReport)
@@ -131,15 +127,12 @@ func main() {
 					log.Error().Stack().Err(errors.New(err.Error())).Msg("")
 					return
 				}
-				slackVulnerabilityStatus = "new"
 				summaryReportStatus.New++
 			} else {
 				notionPageList = append(notionPageList, notionQueryNameResult[0])
-				slackVulnerabilityStatus = "still-open"
 			}
 		}
 		summaryReportSeverity.Host = detailReport.Host
-		// slackAttachmentList = append(slackAttachmentList, model.CreateAttachment(detailReport.Info.Name, strings.Join(detailReport.Info.Tags, ", "), detailReport.Info.Severity, detailReport.Info.Classification.CvssMetrics, strconv.FormatFloat(detailReport.Info.Classification.CvssScore, 'f', -1, 64), detailReport.Host, detailReport.Matched, slackVulnerabilityStatus))
 	}
 
 	if len(vulnerabilityList) == 0 {
