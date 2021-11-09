@@ -80,6 +80,7 @@ func InsertNotionVulnerability(client *notionapi.Client, vulnerability Output) (
 	}
 
 	vulnerabilityName = truncateString(vulnerabilityName, 100)
+	vulnerabilityEndpoint := truncateString(vulnerability.Matched, 100)
 
 	var multiSelect []notionapi.Option
 	for _, tag := range vulnerability.Info.Tags {
@@ -117,7 +118,7 @@ func InsertNotionVulnerability(client *notionapi.Client, vulnerability Output) (
 				RichText: []notionapi.RichText{
 					{
 						Text: notionapi.Text{
-							Content: vulnerability.Matched,
+							Content: vulnerabilityEndpoint,
 						},
 					},
 				},
