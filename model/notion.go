@@ -3,9 +3,9 @@ package model
 import (
 	"context"
 	"errors"
-	"fmt"
 	"github.com/fadhilthomas/go-nuclei-reporter/config"
 	"github.com/jomei/notionapi"
+	"strings"
 )
 
 func OpenNotionDB() (client *notionapi.Client) {
@@ -14,17 +14,10 @@ func OpenNotionDB() (client *notionapi.Client) {
 	return client
 }
 
-func QueryNotionVulnerabilityName(client *notionapi.Client, vulnerability Output) (output []notionapi.Page, err error) {
+func QueryNotionVulnerabilityName(client *notionapi.Client, vulnerability Vulnerability) (output []notionapi.Page, err error) {
 	databaseId := config.GetStr(config.NOTION_DATABASE)
 
-	var vulnerabilityName string
-	if vulnerability.MatcherName != "" {
-		vulnerabilityName = fmt.Sprintf("%s - %s", vulnerability.Info.Name, vulnerability.MatcherName)
-	} else {
-		vulnerabilityName = vulnerability.Info.Name
-	}
-
-	vulnerabilityName = truncateString(vulnerabilityName, 100)
+	vulnerabilityName := strings.TrimSpace(truncateString(vulnerability.Name, 100))
 
 	databaseQueryRequest := &notionapi.DatabaseQueryRequest{
 		CompoundFilter: &notionapi.CompoundFilter{
@@ -69,21 +62,14 @@ func QueryNotionVulnerabilityStatus(client *notionapi.Client, vulnerabilityStatu
 	return res.Results, nil
 }
 
-func InsertNotionVulnerability(client *notionapi.Client, vulnerability Output) (output *notionapi.Page, err error) {
+func InsertNotionVulnerability(client *notionapi.Client, vulnerability Vulnerability) (output *notionapi.Page, err error) {
 	databaseId := config.GetStr(config.NOTION_DATABASE)
 
-	var vulnerabilityName string
-	if vulnerability.MatcherName != "" {
-		vulnerabilityName = fmt.Sprintf("%s - %s", vulnerability.Info.Name, vulnerability.MatcherName)
-	} else {
-		vulnerabilityName = vulnerability.Info.Name
-	}
-
-	vulnerabilityName = truncateString(vulnerabilityName, 100)
-	vulnerabilityEndpoint := truncateString(vulnerability.Matched, 100)
+	vulnerabilityName := strings.TrimSpace(truncateString(vulnerability.Name, 100))
+	vulnerabilityEndpoint := strings.TrimSpace(truncateString(vulnerability.Endpoint, 100))
 
 	var multiSelect []notionapi.Option
-	for _, tag := range vulnerability.Info.Tags {
+	for _, tag := range vulnerability.Tags {
 		selectOption := notionapi.Option{
 			Name: tag,
 		}
@@ -106,7 +92,7 @@ func InsertNotionVulnerability(client *notionapi.Client, vulnerability Output) (
 			},
 			"Severity": notionapi.SelectProperty{
 				Select: notionapi.Option{
-					Name: vulnerability.Info.Severity,
+					Name: vulnerability.Severity,
 				},
 			},
 			"Host": notionapi.SelectProperty{
@@ -132,7 +118,7 @@ func InsertNotionVulnerability(client *notionapi.Client, vulnerability Output) (
 				MultiSelect: multiSelect,
 			},
 			"CVSS Score": notionapi.NumberProperty{
-				Number: vulnerability.Info.Classification.CvssScore,
+				Number: vulnerability.CVSSScore,
 			},
 		},
 	}

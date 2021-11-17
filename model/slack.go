@@ -9,73 +9,38 @@ import (
 	"time"
 )
 
-func CreateAttachment(name string, tags string, severity string, metric string, score string, host string, matched string, status string) (attachment SlackAttachmentBody) {
-	nameField := SlackFieldBody{
-		Title: "Name",
-		Value: name,
-		Short: false,
-	}
+type SlackRequestBody struct {
+	Title       string                `json:"title"`
+	Text        string                `json:"text"`
+	Attachments []SlackAttachmentBody `json:"attachments"`
+	Blocks      []SlackBlockBody      `json:"blocks"`
+}
 
-	tagsField := SlackFieldBody{
-		Title: "Tags",
-		Value: fmt.Sprintf("`%s`", tags),
-		Short: true,
-	}
+type SlackAttachmentBody struct {
+	Color  string           `json:"color"`
+	Fields []SlackFieldBody `json:"fields"`
+}
 
-	severityField := SlackFieldBody{
-		Title: "Severity",
-		Value: fmt.Sprintf("`%s`", severity),
-		Short: true,
-	}
+type SlackBlockBody struct {
+	Type string              `json:"type"`
+	Text SlackBlockFieldBody `json:"text"`
+}
 
-	metricField := SlackFieldBody{
-		Title: "CVSS Metric",
-		Value: fmt.Sprintf("`%s - %s`", score, metric),
-		Short: false,
-	}
+type SlackFieldBody struct {
+	Title string `json:"title"`
+	Value string `json:"value"`
+	Short bool   `json:"short"`
+}
 
-	hostField := SlackFieldBody{
-		Title: "Host",
-		Value: fmt.Sprintf("`%s`", host),
-		Short: true,
-	}
-
-	statusField := SlackFieldBody{
-		Title: "Status",
-		Value: fmt.Sprintf("`%s`", status),
-		Short: true,
-	}
-
-	matchedField := SlackFieldBody{
-		Title: "Endpoint",
-		Value: fmt.Sprintf("`%s`", matched),
-		Short: false,
-	}
-
-	var color string
-	switch {
-	case severity == "critical" || severity == "high":
-		color = "danger"
-	case severity == "medium":
-		color = "warning"
-	default:
-		color = "good"
-	}
-
-	var fieldList []SlackFieldBody
-	fieldList = append(fieldList, nameField, tagsField, severityField, metricField, hostField, statusField, matchedField)
-
-	attachment = SlackAttachmentBody{
-		Fields: fieldList,
-		Color:  color,
-	}
-	return attachment
+type SlackBlockFieldBody struct {
+	Type string `json:"type"`
+	Text string `json:"text"`
 }
 
 func CreateBlockSummary(severity SummaryReportSeverity, status SummaryReportStatus) (block SlackBlockBody) {
 	summaryField := SlackBlockFieldBody{
 		Type: "mrkdwn",
-		Text: fmt.Sprintf("> *Open Vulnerability Summary*, @here\n> *Host:* `%s`\n```Severity      Count\n-------------------\nCritical      %d\nHigh          %d\nMedium        %d\nLow           %d\nInfo          %d\n-------------------\nTotal         %d```\n\n```Status      Count\n-------------------\nClose         %d\nOpen          %d\nNew           %d\n-------------------\nTotal         %d```", severity.Host, severity.Critical, severity.High, severity.Medium, severity.Low, severity.Info, severity.Critical+severity.High+severity.Medium+severity.Low+severity.Info, status.Close, status.Open, status.New, status.Open+status.Close),
+		Text: fmt.Sprintf("> *Open Vulnerability Summary*, @here\n> *Scan Type:* `%s`\n```Severity      Count\n-------------------\nCritical      %d\nHigh          %d\nMedium        %d\nLow           %d\nInfo          %d\n-------------------\nTotal         %d```\n\n```Status      Count\n-------------------\nClose         %d\nOpen          %d\nNew           %d\n-------------------\nTotal         %d```", "Nucei", severity.Critical, severity.High, severity.Medium, severity.Low, severity.Info, status.Open+status.Close, status.Close, status.Open, status.New, status.Open+status.Close),
 	}
 
 	block = SlackBlockBody{

@@ -2,8 +2,8 @@ package main
 
 import (
 	"bufio"
-	"database/sql"
 	"encoding/json"
+	"fmt"
 	"github.com/fadhilthomas/go-nuclei-reporter/config"
 	"github.com/fadhilthomas/go-nuclei-reporter/model"
 	"github.com/jomei/notionapi"
@@ -16,12 +16,12 @@ import (
 )
 
 var (
-	slackAttachmentList []model.SlackAttachmentBody
-	slackBlockList      []model.SlackBlockBody
-	vulnerabilityList   []model.Output
-	notionPageList      []notionapi.Page
-	sqlDatabase         *sql.DB
-	notionDatabase      *notionapi.Client
+	slackAttachmentList   []model.SlackAttachmentBody
+	slackBlockList        []model.SlackBlockBody
+	notionDatabase        *notionapi.Client
+	summaryReportSeverity model.SummaryReportSeverity
+	summaryReportStatus   model.SummaryReportStatus
+	vulnerabilityList     []model.Vulnerability
 )
 
 func main() {
@@ -34,44 +34,24 @@ func main() {
 	zerolog.ErrorStackMarshaler = pkgerrors.MarshalStack
 	rl := ratelimit.New(1)
 
-	databaseType := config.GetStr(config.DATABASE_TYPE)
 	slackToken := config.GetStr(config.SLACK_TOKEN)
+	notionDatabase = model.OpenNotionDB()
 
-	if databaseType == "sqlite" {
-		sqlDatabase, err := model.OpenSqliteDB()
-		if err != nil {
-			log.Error().Stack().Err(errors.New(err.Error())).Msg("")
-			return
-		}
-		if sqlDatabase == nil {
-			return
-		}
-		err = model.UpdateSqliteVulnerabilityStatusAll(sqlDatabase)
-		if err != nil {
-			log.Error().Stack().Err(errors.New(err.Error())).Msg("")
-			return
-		}
-	} else if databaseType == "notion" {
-		notionDatabase = model.OpenNotionDB()
-
-		rl.Take()
-		notionQueryStatusResult, err := model.QueryNotionVulnerabilityStatus(notionDatabase, "open")
-		if err != nil {
-			log.Error().Stack().Err(errors.New(err.Error())).Msg("")
-			return
-		}
-		for _, notionPage := range notionQueryStatusResult {
-			rl.Take()
-			_, err := model.UpdateNotionVulnerabilityStatus(notionDatabase, notionPage.ID.String(), "close")
-			if err != nil {
-				log.Error().Stack().Err(errors.New(err.Error())).Msg("")
-				return
-			}
-		}
+	rl.Take()
+	notionQueryStatusResult, err := model.QueryNotionVulnerabilityStatus(notionDatabase, "open")
+	if err != nil {
+		log.Error().Stack().Err(errors.New(err.Error())).Msg("")
+		return
 	}
-
-	summaryReportSeverity := model.SummaryReportSeverity{}
-	summaryReportStatus := model.SummaryReportStatus{}
+	for _, notionPage := range notionQueryStatusResult {
+		rl.Take()
+		_, err := model.UpdateNotionVulnerabilityStatus(notionDatabase, notionPage.ID.String(), "close")
+		if err != nil {
+			log.Error().Stack().Err(errors.New(err.Error())).Msg("")
+			return
+		}
+		summaryReportStatus.Close++
+	}
 
 	fileReport, err := os.Open(config.GetStr(config.FILE_LOCATION))
 	if err != nil {
@@ -87,8 +67,6 @@ func main() {
 			return
 		}
 
-		vulnerabilityList = append(vulnerabilityList, detailReport)
-
 		switch detailReport.Info.Severity {
 		case "critical":
 			summaryReportSeverity.Critical++
@@ -102,69 +80,49 @@ func main() {
 			summaryReportSeverity.Info++
 		}
 
-		if databaseType == "sqlite" {
-			sqlQueryNameResult, _ := model.QuerySqliteVulnerability(sqlDatabase, detailReport.TemplateID, detailReport.Host)
-			if sqlQueryNameResult == "new" {
-				log.Debug().Str("file", "main").Str("vulnerability name", detailReport.TemplateID).Str("vulnerability host", detailReport.Host).Msg("success")
-				err = model.InsertSqliteVulnerability(sqlDatabase, detailReport.TemplateID, detailReport.Host, "open")
-				if err != nil {
-					log.Error().Stack().Err(errors.New(err.Error())).Msg("")
-					return
-				}
-			}
-		} else if databaseType == "notion" {
-			rl.Take()
-			notionQueryNameResult, err := model.QueryNotionVulnerabilityName(notionDatabase, detailReport)
-			if err != nil {
-				log.Error().Stack().Err(errors.New(err.Error())).Msg("")
-				return
-			}
-
-			if len(notionQueryNameResult) == 0 {
-				rl.Take()
-				_, err = model.InsertNotionVulnerability(notionDatabase, detailReport)
-				if err != nil {
-					log.Error().Stack().Err(errors.New(err.Error())).Msg("")
-					return
-				}
-				summaryReportStatus.New++
-			} else {
-				notionPageList = append(notionPageList, notionQueryNameResult[0])
-			}
+		vulnerability := model.Vulnerability{}
+		if detailReport.MatcherName != "" {
+			vulnerability.Name = fmt.Sprintf("%s - %s", detailReport.Info.Name, detailReport.MatcherName)
+		} else {
+			vulnerability.Name = detailReport.Info.Name
 		}
-		summaryReportSeverity.Host = detailReport.Host
+		vulnerability.Host = detailReport.Host
+		vulnerability.Endpoint = detailReport.Matched
+		vulnerability.Severity = detailReport.Info.Severity
+		vulnerability.CVSSScore = detailReport.Info.Classification.CvssScore
+		vulnerability.Tags = detailReport.Info.Tags
+		vulnerabilityList = append(vulnerabilityList, vulnerability)
 	}
 
-	if len(vulnerabilityList) == 0 {
-		return
-	}
-
-	if databaseType == "sqlite" {
-		for _, vulnerability := range vulnerabilityList {
-			err = model.UpdateSqliteVulnerabilityStatus(sqlDatabase, vulnerability.TemplateID, vulnerability.Host, "open")
-			if err != nil {
-				log.Error().Stack().Err(errors.New(err.Error())).Msg("")
-				return
-			}
-		}
-	} else if databaseType == "notion" {
-		for _, notionPage := range notionPageList {
-			rl.Take()
-			_, err = model.UpdateNotionVulnerabilityStatus(notionDatabase, notionPage.ID.String(), "open")
-			if err != nil {
-				log.Error().Stack().Err(errors.New(err.Error())).Msg("")
-				return
-			}
-		}
-
-		summaryReportStatus.Open = len(vulnerabilityList)
+	for _, vulnerability := range removeDuplicate(vulnerabilityList) {
 		rl.Take()
-		notionQueryStatusResult, err := model.QueryNotionVulnerabilityStatus(notionDatabase, "close")
+		notionQueryNameResult, err := model.QueryNotionVulnerabilityName(notionDatabase, vulnerability)
 		if err != nil {
 			log.Error().Stack().Err(errors.New(err.Error())).Msg("")
 			return
 		}
-		summaryReportStatus.Close = len(notionQueryStatusResult)
+
+		if len(notionQueryNameResult) > 0 {
+			for _, notionPage := range notionQueryNameResult {
+				rl.Take()
+				_, err = model.UpdateNotionVulnerabilityStatus(notionDatabase, string(notionPage.ID), "open")
+				if err != nil {
+					log.Error().Stack().Err(errors.New(err.Error())).Msg("")
+					return
+				}
+				summaryReportStatus.Open++
+				summaryReportStatus.Close--
+			}
+		} else {
+			rl.Take()
+			_, err = model.InsertNotionVulnerability(notionDatabase, vulnerability)
+			if err != nil {
+				log.Error().Stack().Err(errors.New(err.Error())).Msg("")
+				return
+			}
+			summaryReportStatus.New++
+			summaryReportStatus.Open++
+		}
 	}
 
 	slackBlockList = append(slackBlockList, model.CreateBlockSummary(summaryReportSeverity, summaryReportStatus))
@@ -173,4 +131,20 @@ func main() {
 		log.Error().Stack().Err(errors.New(err.Error())).Msg("")
 		return
 	}
+}
+
+func removeDuplicate(duplicate []model.Vulnerability) []model.Vulnerability {
+	var unique []model.Vulnerability
+	type key struct{ value1, value2 string }
+	m := make(map[key]int)
+	for _, v := range duplicate {
+		k := key{v.Name, v.Host}
+		if i, ok := m[k]; ok {
+			unique[i] = v
+		} else {
+			m[k] = len(unique)
+			unique = append(unique, v)
+		}
+	}
+	return unique
 }
