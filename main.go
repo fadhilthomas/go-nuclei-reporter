@@ -67,19 +67,6 @@ func main() {
 			return
 		}
 
-		switch detailReport.Info.Severity {
-		case "critical":
-			summaryReportSeverity.Critical++
-		case "high":
-			summaryReportSeverity.High++
-		case "medium":
-			summaryReportSeverity.Medium++
-		case "low":
-			summaryReportSeverity.Low++
-		case "info":
-			summaryReportSeverity.Info++
-		}
-
 		vulnerability := model.Vulnerability{}
 		if detailReport.MatcherName != "" {
 			vulnerability.Name = fmt.Sprintf("%s - %s", detailReport.Info.Name, detailReport.MatcherName)
@@ -95,6 +82,19 @@ func main() {
 	}
 
 	for _, vulnerability := range removeDuplicate(vulnerabilityList) {
+		switch vulnerability.Severity {
+		case "critical":
+			summaryReportSeverity.Critical++
+		case "high":
+			summaryReportSeverity.High++
+		case "medium":
+			summaryReportSeverity.Medium++
+		case "low":
+			summaryReportSeverity.Low++
+		case "info":
+			summaryReportSeverity.Info++
+		}
+
 		rl.Take()
 		notionQueryNameResult, err := model.QueryNotionVulnerabilityName(notionDatabase, vulnerability)
 		if err != nil {

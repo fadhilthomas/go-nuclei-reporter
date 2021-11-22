@@ -40,7 +40,7 @@ type SlackBlockFieldBody struct {
 func CreateBlockSummary(severity SummaryReportSeverity, status SummaryReportStatus) (block SlackBlockBody) {
 	summaryField := SlackBlockFieldBody{
 		Type: "mrkdwn",
-		Text: fmt.Sprintf("> *Open Vulnerability Summary*, @here\n> *Scan Type:* `%s`\n```Severity      Count\n-------------------\nCritical      %d\nHigh          %d\nMedium        %d\nLow           %d\nInfo          %d\n-------------------\nTotal         %d```\n\n```Status      Count\n-------------------\nClose         %d\nOpen          %d\nNew           %d\n-------------------\nTotal         %d```", "Nucei", severity.Critical, severity.High, severity.Medium, severity.Low, severity.Info, status.Open+status.Close, status.Close, status.Open, status.New, status.Open+status.Close),
+		Text: fmt.Sprintf("> *Open Vulnerability Summary*, @here\n> *Scan Type:* `%s`\n```Severity      Count\n-------------------\nCritical      %d\nHigh          %d\nMedium        %d\nLow           %d\nInfo          %d\n-------------------\nTotal         %d```\n\n```Status      Count\n-------------------\nClose         %d\nOpen          %d\nNew           %d\n-------------------\nTotal         %d```", "Nucei", severity.Critical, severity.High, severity.Medium, severity.Low, severity.Info, status.Open, status.Close, status.Open, status.New, status.Open+status.Close),
 	}
 
 	block = SlackBlockBody{
