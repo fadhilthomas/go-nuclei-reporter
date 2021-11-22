@@ -18,48 +18,62 @@ func QueryNotionVulnerabilityName(client *notionapi.Client, vulnerability Vulner
 	databaseId := config.GetStr(config.NOTION_DATABASE)
 
 	vulnerabilityName := strings.TrimSpace(truncateString(vulnerability.Name, 100))
-
-	databaseQueryRequest := &notionapi.DatabaseQueryRequest{
-		CompoundFilter: &notionapi.CompoundFilter{
-			notionapi.FilterOperatorAND: []notionapi.PropertyFilter{
-				{
-					Property: "Name",
-					Text: &notionapi.TextFilterCondition{
-						Equals: vulnerabilityName,
+	var pageList []notionapi.Page
+	var cursor notionapi.Cursor
+	for hasMore := true; hasMore; {
+		databaseQueryRequest := &notionapi.DatabaseQueryRequest{
+			CompoundFilter: &notionapi.CompoundFilter{
+				notionapi.FilterOperatorAND: []notionapi.PropertyFilter{
+					{
+						Property: "Name",
+						Text: &notionapi.TextFilterCondition{
+							Equals: vulnerabilityName,
+						},
 					},
-				},
-				{
-					Property: "Host",
-					Select: &notionapi.SelectFilterCondition{
-						Equals: vulnerability.Host,
+					{
+						Property: "Host",
+						Select: &notionapi.SelectFilterCondition{
+							Equals: vulnerability.Host,
+						},
 					},
 				},
 			},
-		},
+			StartCursor: cursor,
+		}
+		resp, err := client.Database.Query(context.Background(), notionapi.DatabaseID(databaseId), databaseQueryRequest)
+		if err != nil {
+			return nil, errors.New(err.Error())
+		}
+		pageList = append(pageList, resp.Results...)
+		hasMore = resp.HasMore
+		cursor = resp.NextCursor
 	}
-
-	res, err := client.Database.Query(context.Background(), notionapi.DatabaseID(databaseId), databaseQueryRequest)
-	if err != nil {
-		return nil, errors.New(err.Error())
-	}
-	return res.Results, nil
+	return pageList, nil
 }
 
 func QueryNotionVulnerabilityStatus(client *notionapi.Client, vulnerabilityStatus string) (output []notionapi.Page, err error) {
 	databaseId := config.GetStr(config.NOTION_DATABASE)
-	databaseQueryRequest := &notionapi.DatabaseQueryRequest{
-		PropertyFilter: &notionapi.PropertyFilter{
-			Property: "Status",
-			Select: &notionapi.SelectFilterCondition{
-				Equals: vulnerabilityStatus,
+	var pageList []notionapi.Page
+	var cursor notionapi.Cursor
+	for hasMore := true; hasMore; {
+		databaseQueryRequest := &notionapi.DatabaseQueryRequest{
+			PropertyFilter: &notionapi.PropertyFilter{
+				Property: "Status",
+				Select: &notionapi.SelectFilterCondition{
+					Equals: vulnerabilityStatus,
+				},
 			},
-		},
+			StartCursor: cursor,
+		}
+		resp, err := client.Database.Query(context.Background(), notionapi.DatabaseID(databaseId), databaseQueryRequest)
+		if err != nil {
+			return nil, errors.New(err.Error())
+		}
+		pageList = append(pageList, resp.Results...)
+		hasMore = resp.HasMore
+		cursor = resp.NextCursor
 	}
-	res, err := client.Database.Query(context.Background(), notionapi.DatabaseID(databaseId), databaseQueryRequest)
-	if err != nil {
-		return nil, errors.New(err.Error())
-	}
-	return res.Results, nil
+	return pageList, nil
 }
 
 func InsertNotionVulnerability(client *notionapi.Client, vulnerability Vulnerability) (output *notionapi.Page, err error) {
