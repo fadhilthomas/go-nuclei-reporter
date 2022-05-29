@@ -10,7 +10,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: run stale
-        uses: actions/stale@v4
+        uses: actions/stale@v5
         with:
           repo-token: ${{ secrets.GITHUB_TOKEN }}
           stale-issue-message: this issue won't be fixed & marked as invalid. closed.
